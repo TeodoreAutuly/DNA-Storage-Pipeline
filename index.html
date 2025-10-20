@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA Storage Pipeline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0e1a; /* Fond bleu nuit */
+            color: #e0e0e0; /* Texte blanc cassé */
+        }
+        .pipeline-card {
+            background-color: #1a2035; /* Fond de carte plus clair */
+            border: 1px solid #3a3f58;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .code-block {
+            background-color: #0d1117; /* Fond de code type GitHub */
+            border: 1px solid #30363d;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            color: #c9d1d9;
+            word-break: break-all;
+        }
+        .glow-button {
+            box-shadow: 0 0 5px #0ea5e9, 0 0 15px #0ea5e9, 0 0 25px #0ea5e9;
+            transition: all 0.3s ease;
+        }
+        .glow-button:hover {
+             box-shadow: 0 0 10px #0ea5e9, 0 0 25px #0ea5e9, 0 0 50px #0ea5e9;
+        }
+        .result-card {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+            animation: fadeIn 0.5s forwards;
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto px-4 py-12">
+        <!-- En-tête -->
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">DNA Storage Pipeline</h1>
+            <p class="text-lg md:text-xl text-sky-300 max-w-3xl mx-auto">
+                Transformer des mots en molécules. Découvrez notre pipeline complet pour archiver une phrase sur de l'ADN synthétique.
+            </p>
+        </header>
+
+        <!-- Simulateur Interactif -->
+        <section id="simulator" class="pipeline-card p-8 rounded-lg mb-20">
+            <h2 class="text-3xl font-bold text-white mb-6 text-center">Simulateur de Pipeline ADN</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div>
+                    <label for="inputText" class="block text-lg font-medium text-sky-300 mb-2">1. Entrez votre message</label>
+                    <textarea id="inputText" rows="4" class="w-full p-3 rounded-md bg-gray-800 border border-gray-600 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="Bonjour le monde !">Test de stockage ADN.</textarea>
+                </div>
+                <div class="space-y-6 pt-2">
+                     <div>
+                        <label for="ldpcRate" class="block text-lg font-medium text-sky-300 mb-2">2. Ratio d'Information LDPC <span id="ldpcRateValue" class="text-white font-mono bg-sky-900/50 rounded px-2 py-1 text-sm">0.7</span></label>
+                        <input id="ldpcRate" type="range" min="0.5" max="0.9" value="0.7" step="0.1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>Plus Robuste</span>
+                            <span>Plus Dense</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="readsCount" class="block text-lg font-medium text-sky-300 mb-2">3. Nombre de Lectures (Consensus) <span id="readsCountValue" class="text-white font-mono bg-sky-900/50 rounded px-2 py-1 text-sm">20</span></label>
+                        <input id="readsCount" type="range" min="5" max="50" value="20" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>5</span>
+                            <span>50</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="errorRate" class="block text-lg font-medium text-sky-300 mb-2">4. Taux d'Erreur du Canal <span id="errorRateValue" class="text-white font-mono bg-sky-900/50 rounded px-2 py-1 text-sm">5%</span></label>
+                        <input id="errorRate" type="range" min="1" max="100" value="95" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>Erreurs Max (~13%)</span>
+                            <span>Parfait (0%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="text-center mt-8">
+                <button id="runSimulation" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-4 px-8 rounded-full text-lg glow-button">
+                    Lancer la Simulation
+                </button>
+            </div>
+            <div id="simulation-results" class="mt-8 space-y-6"></div>
+        </section>
+
+        <!-- Section d'information sur le stockage ADN -->
+        <section class="mb-20">
+            <h2 class="text-3xl font-bold text-white mb-12 text-center">Le Stockage sur ADN : Une Révolution</h2>
+            
+            <div class="max-w-7xl mx-auto">
+                <h3 class="text-2xl font-semibold text-sky-300 mb-8 text-center">Le Processus Physique en 4 Étapes Clés</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- Étape 1: Synthèse -->
+                    <div class="pipeline-card p-6 rounded-lg flex flex-col items-center text-center hover:transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-sky-500/20">
+                        <div class="bg-sky-900/50 p-4 rounded-full mb-4">
+                            <svg class="w-8 h-8 text-sky-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                            </svg>
+                        </div>
+                        <h4 class="text-xl font-semibold text-white mb-2">1. Synthèse (Écriture)</h4>
+                        <p class="text-gray-400 text-sm">C'est le processus d'écriture. Les données binaires (0 et 1) sont converties en une séquence de bases d'ADN (A, C, G, T). Une machine, tel un "imprimeur d'ADN", assemble chimiquement des brins d'ADN synthétique, base par base, pour correspondre à cette séquence.</p>
+                    </div>
+
+                    <!-- Étape 2: Stockage -->
+                    <div class="pipeline-card p-6 rounded-lg flex flex-col items-center text-center hover:transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-sky-500/20">
+                        <div class="bg-sky-900/50 p-4 rounded-full mb-4">
+                            <svg class="w-8 h-8 text-sky-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-xl font-semibold text-white mb-2">2. Stockage (Archivage)</h4>
+                        <p class="text-gray-400 text-sm">Pour une conservation à très long terme, les molécules d'ADN synthétisées sont déshydratées et encapsulées dans des petites billes de silice. Cet "archivage moléculaire" les protège de la dégradation et permet de conserver les données durant des millénaires sans apport d'énergie.</p>
+                    </div>
+
+                    <!-- Étape 3: Séquençage -->
+                    <div class="pipeline-card p-6 rounded-lg flex flex-col items-center text-center hover:transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-sky-500/20">
+                        <div class="bg-sky-900/50 p-4 rounded-full mb-4">
+                            <svg class="w-8 h-8 text-sky-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-xl font-semibold text-white mb-2">3. Séquençage (Lecture)</h4>
+                        <p class="text-gray-400 text-sm">C'est le processus de lecture. Les capsules d'ADN sont réhydratées et insérées dans un séquenceur. Cette machine lit l'ordre des bases (A, C, G, T) sur des millions de brins en parallèle, générant de multiples copies ("lectures") de la séquence originale, souvent avec quelques erreurs.</p>
+                    </div>
+
+                    <!-- Étape 4: Décodage -->
+                    <div class="pipeline-card p-6 rounded-lg flex flex-col items-center text-center hover:transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-sky-500/20">
+                        <div class="bg-sky-900/50 p-4 rounded-full mb-4">
+                            <svg class="w-8 h-8 text-sky-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+                            </svg>
+                        </div>
+                        <h4 class="text-xl font-semibold text-white mb-2">4. Décodage (Interprétation)</h4>
+                        <p class="text-gray-400 text-sm">C'est l'étape logicielle finale. Les multiples lectures bruitées sont analysées par des algorithmes (comme notre consensus et la correction LDPC) pour reconstruire la séquence d'ADN parfaite. Celle-ci est ensuite reconvertie en données binaires pour restaurer le fichier original à l'identique.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-sky-300 mb-4 text-center mt-20">Avantages et Défis</h3>
+            <div class="flex flex-col md:flex-row justify-center gap-8 max-w-5xl mx-auto">
+                <div class="pipeline-card p-6 rounded-lg text-left flex-1">
+                    <h4 class="text-xl font-semibold text-green-400 mb-2">Densité Extrême</h4>
+                    <p class="text-gray-300">Un gramme d'ADN peut théoriquement stocker plus de 200 exaoctets d'information, soit l'équivalent de millions de disques durs. C'est le support de stockage le plus dense connu.</p>
+                </div>
+                <div class="pipeline-card p-6 rounded-lg text-left flex-1">
+                    <h4 class="text-xl font-semibold text-green-400 mb-2">Durabilité Millénaire</h4>
+                    <p class="text-gray-300">Contrairement aux supports magnétiques qui se dégradent en quelques décennies, l'ADN peut préserver l'information pendant des milliers d'années s'il est conservé à l'abri de la lumière et de l'humidité.</p>
+                </div>
+                <div class="pipeline-card p-6 rounded-lg text-left flex-1">
+                    <h4 class="text-xl font-semibold text-yellow-400 mb-2">Défis Actuels</h4>
+                    <p class="text-gray-300">Les principaux obstacles restent le coût élevé et la lenteur des processus de synthèse (écriture) et de séquençage (lecture), bien que la recherche progresse rapidement pour surmonter ces défis.</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer class="text-center py-8 text-gray-400 text-sm border-t border-gray-700">
+        <p>Réalisé par Téodore Autuly pour un projet supervisé par Elsa Dupraz.</p>
+        <p class="mt-2">Licence MIT</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- ELEMENTS DU DOM ---
+            const runButton = document.getElementById('runSimulation');
+            const resultsContainer = document.getElementById('simulation-results');
+            const inputText = document.getElementById('inputText');
+            
+            const ldpcRateSlider = document.getElementById('ldpcRate');
+            const ldpcRateValue = document.getElementById('ldpcRateValue');
+            const readsCountSlider = document.getElementById('readsCount');
+            const readsCountValue = document.getElementById('readsCountValue');
+            const errorRateSlider = document.getElementById('errorRate');
+            const errorRateValue = document.getElementById('errorRateValue');
+
+            // --- LISTENERS POUR AFFICHER LES VALEURS DES SLIDERS ---
+            ldpcRateSlider.addEventListener('input', () => {
+                ldpcRateValue.textContent = parseFloat(ldpcRateSlider.value).toFixed(1);
+            });
+            readsCountSlider.addEventListener('input', () => {
+                readsCountValue.textContent = readsCountSlider.value;
+            });
+            errorRateSlider.addEventListener('input', () => {
+                errorRateValue.textContent = `${(100 - errorRateSlider.value)}%`;
+            });
+
+
+            // --- FONCTIONS DU PIPELINE ---
+
+            // Convertit un texte en chaîne binaire (ex: 'A' -> '01000001')
+            const textToBinary = (text) => text.split('').map(char => char.charCodeAt(0).toString(2).padStart(8, '0')).join('');
+
+            // Classe simplifiée pour simuler l'encodage et le décodage LDPC
+            class LdpcSimulator {
+                constructor(k, rate) {
+                    this.k = k; // Longueur du message
+                    this.rate = rate;
+                    this.n = Math.ceil(k / rate); // Longueur du mot de code
+                    this.m = this.n - this.k; // Nombre de bits de parité
+                }
+
+                encode(message) {
+                    // Simulation: ajoute des bits de parité (simple répétition pour la démo)
+                    const parity = message.slice(0, this.m);
+                    return message + parity;
+                }
+
+                decode(received, quality) {
+                    const messagePart = received.slice(0, this.k);
+                    let correctedMessage = messagePart.split('');
+                    const originalMessage = textToBinary(inputText.value);
+
+                    // Simule la correction d'erreurs: plus la qualité est haute, plus on corrige
+                    const correctionPower = quality / 100;
+                    let errorsCorrected = 0;
+                    
+                    for (let i = 0; i < this.k; i++) {
+                        if (correctedMessage[i] !== originalMessage[i]) {
+                            if (Math.random() < correctionPower) {
+                                correctedMessage[i] = originalMessage[i];
+                                errorsCorrected++;
+                            }
+                        }
+                    }
+                    console.log(`LDPC Correction: Attempted to fix ${errorsCorrected} bits.`);
+                    return correctedMessage.join('');
+                }
+            }
+            
+            // Convertit une chaîne binaire en séquence ADN (ex: '00' -> 'A')
+            const binaryToDna = (binary) => {
+                const dnaMap = {'00': 'A', '01': 'C', '10': 'G', '11': 'T'};
+                let dna = '';
+                // Assure une longueur paire
+                const binaryPadded = binary.length % 2 !== 0 ? binary + '0' : binary;
+                for (let i = 0; i < binaryPadded.length; i += 2) {
+                    dna += dnaMap[binaryPadded.substring(i, i + 2)];
+                }
+                return dna;
+            };
+
+            // Simule le canal bruité (erreurs de synthèse, stockage, séquençage)
+            const simulateNoisyChannel = (dna, quality, readsCount) => {
+                const errorRate = (100 - quality) / 750; // Taux d'erreur jusqu'à ~13%
+                const reads = [];
+                for (let i = 0; i < readsCount; i++) {
+                    let read = dna.split('');
+                    for (let j = 0; j < read.length; j++) {
+                        if (Math.random() < errorRate) {
+                            const errorType = Math.random();
+                            const bases = ['A', 'C', 'G', 'T'];
+                            if (errorType < 0.7) { // Substitution
+                                read[j] = bases[Math.floor(Math.random() * 4)];
+                            } else if (errorType < 0.85) { // Délétion
+                                read[j] = '';
+                            } else { // Insertion
+                                read[j] += bases[Math.floor(Math.random() * 4)];
+                            }
+                        }
+                    }
+                    reads.push(read.join(''));
+                }
+                return reads;
+            };
+
+            // Construit une séquence consensus à partir des lectures bruitées
+            const buildConsensus = (reads) => {
+                if (!reads || reads.length === 0) return "";
+                const maxLength = Math.max(...reads.map(r => r.length));
+                let consensus = '';
+                for (let i = 0; i < maxLength; i++) {
+                    const counts = { 'A': 0, 'C': 0, 'G': 0, 'T': 0 };
+                    let validBases = 0;
+                    reads.forEach(read => {
+                        if (i < read.length && counts.hasOwnProperty(read[i])) {
+                            counts[read[i]]++;
+                            validBases++;
+                        }
+                    });
+                    if (validBases > 0) {
+                        const mostCommonBase = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                        consensus += mostCommonBase;
+                    }
+                }
+                return consensus;
+            };
+
+            // Convertit une séquence ADN en chaîne binaire et la synchronise à la bonne longueur
+            const dnaToBinaryAndSync = (dna, expectedLength) => {
+                const binaryMap = {'A': '00', 'C': '01', 'G': '10', 'T': '11'};
+                let binary = dna.split('').map(base => binaryMap[base] || '').join('');
+
+                // Synchronisation: couper ou compléter pour atteindre la longueur attendue
+                if (binary.length > expectedLength) {
+                    binary = binary.slice(0, expectedLength);
+                } else if (binary.length < expectedLength) {
+                    binary = binary.padEnd(expectedLength, '0');
+                }
+                return binary;
+            };
+
+            const binaryToText = (binary) => {
+                let text = '';
+                for (let i = 0; i < binary.length; i += 8) {
+                    const byte = binary.substring(i, i + 8);
+                    if (byte.length === 8) {
+                        text += String.fromCharCode(parseInt(byte, 2));
+                    }
+                }
+                return text;
+            };
+
+            // --- FONCTION D'AFFICHAGE ---
+            let stepCounter = 1;
+            const renderStep = (title, description, data) => {
+                const truncatedData = data.length > 200 ? data.substring(0, 200) + '...' : data;
+                const html = `
+                    <div class="result-card bg-gray-900/50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-sky-400">Étape ${stepCounter++}: ${title}</h4>
+                        <p class="text-sm text-gray-400 mb-2">${description}</p>
+                        <p class="code-block text-xs">${truncatedData}</p>
+                    </div>
+                `;
+                resultsContainer.innerHTML += html;
+            };
+
+            // --- LOGIQUE PRINCIPALE DE LA SIMULATION ---
+            runButton.addEventListener('click', () => {
+                const originalText = inputText.value;
+                if (!originalText) {
+                    alert("Veuillez entrer un message.");
+                    return;
+                }
+                
+                // Récupération des valeurs des sliders
+                const ldpcRate = parseFloat(ldpcRateSlider.value);
+                const readsCount = parseInt(readsCountSlider.value);
+                const quality = parseInt(errorRateSlider.value);
+
+                resultsContainer.innerHTML = '';
+                stepCounter = 1;
+
+                // --- DÉROULEMENT DU PIPELINE ---
+                
+                // 1. Encodage Binaire
+                const binaryText = textToBinary(originalText);
+                renderStep("Encodage Binaire", `Le message est converti en une suite de 0 et de 1 (longueur: ${binaryText.length} bits).`, binaryText);
+                
+                // 2. Code LDPC
+                const ldpc = new LdpcSimulator(binaryText.length, ldpcRate);
+                const codeword = ldpc.encode(binaryText);
+                renderStep("Protection par Code LDPC", `Ratio: ${ldpcRate}. Des bits de parité sont ajoutés (nouvelle longueur: ${codeword.length} bits).`, codeword);
+
+                // 3. Conversion en Séquence ADN
+                const dnaSequence = binaryToDna(codeword);
+                renderStep("Encodage en Séquence ADN", `La chaîne binaire est traduite en bases A, C, G, T (longueur: ${dnaSequence.length} bases).`, dnaSequence);
+                
+                // 4. Canal Bruité
+                const noisyReads = simulateNoisyChannel(dnaSequence, quality, readsCount);
+                const errorPercentage = ((100-quality)/7.5).toFixed(1);
+                renderStep("Simulation du Canal Bruité", `Taux d'erreur: ~${errorPercentage}%. ${noisyReads.length} lectures imparfaites sont générées.`, noisyReads[0] || "[Échec de lecture]");
+
+                // 5. Algorithme de Consensus
+                const consensusDna = buildConsensus(noisyReads);
+                renderStep("Algorithme de Consensus", `Les lectures sont alignées pour voter et reconstruire la séquence la plus probable (longueur: ${consensusDna.length} bases).`, consensusDna);
+
+                // 6. Décodage et Synchronisation
+                const syncedBinary = dnaToBinaryAndSync(consensusDna, codeword.length);
+                renderStep("Décodage Binaire et Synchronisation", `La séquence consensus est reconvertie en binaire et ajustée à la longueur attendue (${syncedBinary.length} bits).`, syncedBinary);
+                
+                // 7. Correction d'Erreurs LDPC
+                const correctedBinary = ldpc.decode(syncedBinary, quality);
+                renderStep("Correction d'Erreurs LDPC", "Le code LDPC utilise les bits de parité pour tenter de corriger les erreurs restantes.", correctedBinary);
+
+                // 8. Restitution du message et Résultats
+                const decodedText = binaryToText(correctedBinary);
+                const success = originalText === decodedText;
+
+                const finalHtml = `
+                    <div class="result-card bg-gray-900/50 p-6 rounded-lg mt-4">
+                        <h3 class="text-xl font-bold text-white text-center">Résultat Final</h3>
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+                            <div>
+                                <h4 class="font-semibold text-gray-400">Message Original:</h4>
+                                <p class="code-block text-base mt-1">${originalText}</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-400">Message Décodé:</h4>
+                                <p class="code-block text-base mt-1 ${success ? 'text-green-400' : 'text-red-400'}">${decodedText || "Échec"}</p>
+                            </div>
+                        </div>
+                        <div class="text-center pt-4 mt-4">
+                            <p class="text-lg font-bold ${success ? 'text-green-400' : 'text-red-400'}">
+                            ${success ? '✅ Succès de la transmission !' : '❌ Erreurs détectées dans le message final !'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+                resultsContainer.innerHTML += finalHtml;
+            });
+        });
+    </script>
+</body>
+</html>

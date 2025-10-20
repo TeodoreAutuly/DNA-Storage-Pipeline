@@ -1,0 +1,5 @@
+# Requirements for Simulator_Python
+numpy>=1.20.0
+matplotlib>=3.5.0
+Pillow>=9.0.0
+biopython>=1.79
