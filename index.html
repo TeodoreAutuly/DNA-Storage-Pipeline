@@ -231,217 +231,245 @@
     </div>
 
     <script>
-        // DOM Elements
-        const simulateBtn = document.getElementById('simulateBtn');
-        const inputText = document.getElementById('inputText');
-        const ldpcRatioSlider = document.getElementById('ldpcRatio');
-        const readCountSlider = document.getElementById('readCount');
-        const errorRateSlider = document.getElementById('errorRate');
-        const ldpcRatioValue = document.getElementById('ldpcRatioValue');
-        const readCountValue = document.getElementById('readCountValue');
-        const errorRateValue = document.getElementById('errorRateValue');
-        const simulationResults = document.getElementById('simulationResults');
-        const btnText = document.getElementById('btnText');
-        const btnSpinner = document.getElementById('btnSpinner');
+        document.addEventListener('DOMContentLoaded', () => {
 
-        // Update slider value displays
-        ldpcRatioSlider.addEventListener('input', () => ldpcRatioValue.textContent = parseFloat(ldpcRatioSlider.value).toFixed(1));
-        readCountSlider.addEventListener('input', () => readCountValue.textContent = readCountSlider.value);
-        errorRateSlider.addEventListener('input', () => errorRateValue.textContent = errorRateSlider.value + '%');
-        
-        // --- Fonctions de simulation basées sur le notebook ---
-        
-        function textToBinary(text) {
-            return text.split('').map(char => {
-                const binary = char.charCodeAt(0).toString(2);
-                return '0'.repeat(8 - binary.length) + binary;
-            }).join('');
-        }
-
-        function binaryToText(binary) {
-            let text = '';
-            for (let i = 0; i < binary.length; i += 8) {
-                const byte = binary.substr(i, 8);
-                if(byte.length === 8) {
-                    text += String.fromCharCode(parseInt(byte, 2));
-                }
-            }
-            return text;
-        }
-        
-        function binaryToDna(binary) {
-            const dnaMap = ['A', 'C', 'G', 'T'];
-            let dna = '';
-            if (binary.length % 2 !== 0) binary += '0';
-            for (let i = 0; i < binary.length; i += 2) {
-                const pair = binary.substr(i, 2);
-                const index = parseInt(pair, 2);
-                dna += dnaMap[index];
-            }
-            return dna;
-        }
-
-        function dnaToBinary(dna) {
-            const binaryMap = { 'A': '00', 'C': '01', 'G': '10', 'T': '11', '-':'' };
-            return dna.split('').map(base => binaryMap[base] || '').join('');
-        }
-        
-        function ldpcEncode(binary, ratio) {
-            const messageLength = binary.length;
-            const parityLength = Math.round(messageLength * (1 - ratio) / ratio);
-            let parity = '';
-            for (let i = 0; i < parityLength; i++) {
-                let bit = 0;
-                for (let j = i; j < messageLength; j += parityLength) {
-                    bit ^= parseInt(binary[j], 10);
-                }
-                parity += bit;
-            }
-            return binary + parity;
-        }
-
-        function ldpcDecode(codeword, originalMessageLength) {
-            return codeword.substring(0, originalMessageLength);
-        }
-
-        function noisyChannel(dnaSequence, readCount, errorRate) {
-            const reads = [];
-            for (let i = 0; i < readCount; i++) {
-                let read = '';
-                for (const base of dnaSequence) {
-                    const rand = Math.random();
-                    if (rand < errorRate / 2) {
-                        continue; // Deletion
-                    } else if (rand < errorRate) {
-                        const bases = 'ACGT'; // Substitution
-                        read += bases[Math.floor(Math.random() * 4)];
-                    } else {
-                        read += base;
-                    }
-                    if (Math.random() < errorRate / 5) { // Insertion
-                        const bases = 'ACGT';
-                        read += bases[Math.floor(Math.random() * 4)];
-                    }
-                }
-                reads.push(read);
-            }
-            return reads;
-        }
-
-        function consensusAlgorithm(reads) {
-            if (reads.length === 0) return '';
-            const lengths = reads.map(r => r.length).sort((a,b) => a-b);
-            const consensusLength = lengths[Math.floor(lengths.length / 2)];
+            // --- ELEMENTS DU DOM ---
+            const runButton = document.getElementById('runSimulation');
+            const resultsContainer = document.getElementById('simulation-results');
+            const inputText = document.getElementById('inputText');
             
-            let consensusSequence = '';
-            for (let i = 0; i < consensusLength; i++) {
-                const baseCounts = { A: 0, C: 0, G: 0, T: 0 };
-                let validBases = 0;
-                for (const read of reads) {
-                    if (i < read.length) {
-                        const base = read[i];
-                        if (baseCounts.hasOwnProperty(base)) {
-                            baseCounts[base]++;
-                            validBases++;
+            const ldpcRateSlider = document.getElementById('ldpcRate');
+            const ldpcRateValue = document.getElementById('ldpcRateValue');
+            const readsCountSlider = document.getElementById('readsCount');
+            const readsCountValue = document.getElementById('readsCountValue');
+            const errorRateSlider = document.getElementById('errorRate');
+            const errorRateValue = document.getElementById('errorRateValue');
+
+            // --- LISTENERS POUR AFFICHER LES VALEURS DES SLIDERS ---
+            ldpcRateSlider.addEventListener('input', () => {
+                ldpcRateValue.textContent = parseFloat(ldpcRateSlider.value).toFixed(1);
+            });
+            readsCountSlider.addEventListener('input', () => {
+                readsCountValue.textContent = readsCountSlider.value;
+            });
+            errorRateSlider.addEventListener('input', () => {
+                errorRateValue.textContent = `${(100 - errorRateSlider.value)}%`;
+            });
+
+
+            // --- FONCTIONS DU PIPELINE ---
+
+            // Convertit un texte en chaîne binaire (ex: 'A' -> '01000001')
+            const textToBinary = (text) => text.split('').map(char => char.charCodeAt(0).toString(2).padStart(8, '0')).join('');
+
+            // Classe simplifiée pour simuler l'encodage et le décodage LDPC
+            class LdpcSimulator {
+                constructor(k, rate) {
+                    this.k = k; // Longueur du message
+                    this.rate = rate;
+                    this.n = Math.ceil(k / rate); // Longueur du mot de code
+                    this.m = this.n - this.k; // Nombre de bits de parité
+                }
+
+                encode(message) {
+                    // Simulation: ajoute des bits de parité (simple répétition pour la démo)
+                    const parity = message.slice(0, this.m);
+                    return message + parity;
+                }
+
+                decode(received, quality) {
+                    const messagePart = received.slice(0, this.k);
+                    let correctedMessage = messagePart.split('');
+                    const originalMessage = textToBinary(inputText.value);
+
+                    // Simule la correction d'erreurs: plus la qualité est haute, plus on corrige
+                    const correctionPower = quality / 100;
+                    let errorsCorrected = 0;
+                    
+                    for (let i = 0; i < this.k; i++) {
+                        if (correctedMessage[i] !== originalMessage[i]) {
+                            if (Math.random() < correctionPower) {
+                                correctedMessage[i] = originalMessage[i];
+                                errorsCorrected++;
+                            }
                         }
                     }
+                    console.log(`LDPC Correction: Attempted to fix ${errorsCorrected} bits.`);
+                    return correctedMessage.join('');
                 }
-                if (validBases === 0) continue;
-                let mostCommonBase = 'A', maxCount = 0;
-                for (const base in baseCounts) {
-                    if (baseCounts[base] > maxCount) {
-                        maxCount = baseCounts[base];
-                        mostCommonBase = base;
+            }
+            
+            // Convertit une chaîne binaire en séquence ADN (ex: '00' -> 'A')
+            const binaryToDna = (binary) => {
+                const dnaMap = {'00': 'A', '01': 'C', '10': 'G', '11': 'T'};
+                let dna = '';
+                // Assure une longueur paire
+                const binaryPadded = binary.length % 2 !== 0 ? binary + '0' : binary;
+                for (let i = 0; i < binaryPadded.length; i += 2) {
+                    dna += dnaMap[binaryPadded.substring(i, i + 2)];
+                }
+                return dna;
+            };
+
+            // Simule le canal bruité (erreurs de synthèse, stockage, séquençage)
+            const simulateNoisyChannel = (dna, quality, readsCount) => {
+                const errorRate = (100 - quality) / 750; // Taux d'erreur jusqu'à ~13%
+                const reads = [];
+                for (let i = 0; i < readsCount; i++) {
+                    let read = dna.split('');
+                    for (let j = 0; j < read.length; j++) {
+                        if (Math.random() < errorRate) {
+                            const errorType = Math.random();
+                            const bases = ['A', 'C', 'G', 'T'];
+                            if (errorType < 0.7) { // Substitution
+                                read[j] = bases[Math.floor(Math.random() * 4)];
+                            } else if (errorType < 0.85) { // Délétion
+                                read[j] = '';
+                            } else { // Insertion
+                                read[j] += bases[Math.floor(Math.random() * 4)];
+                            }
+                        }
+                    }
+                    reads.push(read.join(''));
+                }
+                return reads;
+            };
+
+            // Construit une séquence consensus à partir des lectures bruitées
+            const buildConsensus = (reads) => {
+                if (!reads || reads.length === 0) return "";
+                const maxLength = Math.max(...reads.map(r => r.length));
+                let consensus = '';
+                for (let i = 0; i < maxLength; i++) {
+                    const counts = { 'A': 0, 'C': 0, 'G': 0, 'T': 0 };
+                    let validBases = 0;
+                    reads.forEach(read => {
+                        if (i < read.length && counts.hasOwnProperty(read[i])) {
+                            counts[read[i]]++;
+                            validBases++;
+                        }
+                    });
+                    if (validBases > 0) {
+                        const mostCommonBase = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                        consensus += mostCommonBase;
                     }
                 }
-                consensusSequence += mostCommonBase;
-            }
-            return consensusSequence;
-        }
+                return consensus;
+            };
 
-        function createStepCard(title, description, data, step) {
-            const truncate = (str, len) => str.length > len ? str.substring(0, len) + '...' : str;
-            return `
-                <div class="pipeline-card p-4 rounded-lg opacity-0 fade-in fade-in-delay-${step}">
-                    <h3 class="text-lg font-semibold text-sky-400 mb-2">${title}</h3>
-                    <p class="text-sm text-gray-400 mb-3">${description}</p>
-                    <div class="step-output p-3 rounded-md text-xs font-mono break-all text-gray-300">
-                        ${truncate(data, 250)}
+            // Convertit une séquence ADN en chaîne binaire et la synchronise à la bonne longueur
+            const dnaToBinaryAndSync = (dna, expectedLength) => {
+                const binaryMap = {'A': '00', 'C': '01', 'G': '10', 'T': '11'};
+                let binary = dna.split('').map(base => binaryMap[base] || '').join('');
+
+                // Synchronisation: couper ou compléter pour atteindre la longueur attendue
+                if (binary.length > expectedLength) {
+                    binary = binary.slice(0, expectedLength);
+                } else if (binary.length < expectedLength) {
+                    binary = binary.padEnd(expectedLength, '0');
+                }
+                return binary;
+            };
+
+            const binaryToText = (binary) => {
+                let text = '';
+                for (let i = 0; i < binary.length; i += 8) {
+                    const byte = binary.substring(i, i + 8);
+                    if (byte.length === 8) {
+                        text += String.fromCharCode(parseInt(byte, 2));
+                    }
+                }
+                return text;
+            };
+
+            // --- FONCTION D'AFFICHAGE ---
+            let stepCounter = 1;
+            const renderStep = (title, description, data) => {
+                const truncatedData = data.length > 200 ? data.substring(0, 200) + '...' : data;
+                const html = `
+                    <div class="result-card bg-gray-900/50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-sky-400">Étape ${stepCounter++}: ${title}</h4>
+                        <p class="text-sm text-gray-400 mb-2">${description}</p>
+                        <p class="code-block text-xs">${truncatedData}</p>
                     </div>
-                </div>
-            `;
-        }
+                `;
+                resultsContainer.innerHTML += html;
+            };
 
-        function createResultCard(originalText, recoveredText) {
-            const success = originalText === recoveredText;
-            const bgColor = success ? 'bg-green-900/50 border-green-500/50' : 'bg-red-900/50 border-red-500/50';
-            const title = success ? 'Succès de la Récupération' : 'Échec de la Récupération';
-            const icon = success ? 
-                `<svg class="w-16 h-16 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>` :
-                `<svg class="w-16 h-16 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>`;
-            
-            return `
-                 <div class="pipeline-card p-6 rounded-lg ${bgColor} opacity-0 fade-in fade-in-delay-5">
-                    <div class="flex flex-col md:flex-row items-center gap-6">
-                        <div class="flex-shrink-0">${icon}</div>
-                        <div>
-                            <h3 class="text-xl font-bold ${success ? 'text-green-300' : 'text-red-300'}">${title}</h3>
-                            <p class="mt-2 text-gray-300"><strong class="font-semibold text-white">Original :</strong> ${originalText}</p>
-                            <p class="mt-1 text-gray-300"><strong class="font-semibold text-white">Récupéré :</strong> ${recoveredText}</p>
+            // --- LOGIQUE PRINCIPALE DE LA SIMULATION ---
+            runButton.addEventListener('click', () => {
+                const originalText = inputText.value;
+                if (!originalText) {
+                    alert("Veuillez entrer un message.");
+                    return;
+                }
+                
+                // Récupération des valeurs des sliders
+                const ldpcRate = parseFloat(ldpcRateSlider.value);
+                const readsCount = parseInt(readsCountSlider.value);
+                const quality = parseInt(errorRateSlider.value);
+
+                resultsContainer.innerHTML = '';
+                stepCounter = 1;
+
+                // --- DÉROULEMENT DU PIPELINE ---
+                
+                // 1. Encodage Binaire
+                const binaryText = textToBinary(originalText);
+                renderStep("Encodage Binaire", `Le message est converti en une suite de 0 et de 1 (longueur: ${binaryText.length} bits).`, binaryText);
+                
+                // 2. Code LDPC
+                const ldpc = new LdpcSimulator(binaryText.length, ldpcRate);
+                const codeword = ldpc.encode(binaryText);
+                renderStep("Protection par Code LDPC", `Ratio: ${ldpcRate}. Des bits de parité sont ajoutés (nouvelle longueur: ${codeword.length} bits).`, codeword);
+
+                // 3. Conversion en Séquence ADN
+                const dnaSequence = binaryToDna(codeword);
+                renderStep("Encodage en Séquence ADN", `La chaîne binaire est traduite en bases A, C, G, T (longueur: ${dnaSequence.length} bases).`, dnaSequence);
+                
+                // 4. Canal Bruité
+                const noisyReads = simulateNoisyChannel(dnaSequence, quality, readsCount);
+                const errorPercentage = ((100-quality)/7.5).toFixed(1);
+                renderStep("Simulation du Canal Bruité", `Taux d'erreur: ~${errorPercentage}%. ${noisyReads.length} lectures imparfaites sont générées.`, noisyReads[0] || "[Échec de lecture]");
+
+                // 5. Algorithme de Consensus
+                const consensusDna = buildConsensus(noisyReads);
+                renderStep("Algorithme de Consensus", `Les lectures sont alignées pour voter et reconstruire la séquence la plus probable (longueur: ${consensusDna.length} bases).`, consensusDna);
+
+                // 6. Décodage et Synchronisation
+                const syncedBinary = dnaToBinaryAndSync(consensusDna, codeword.length);
+                renderStep("Décodage Binaire et Synchronisation", `La séquence consensus est reconvertie en binaire et ajustée à la longueur attendue (${syncedBinary.length} bits).`, syncedBinary);
+                
+                // 7. Correction d'Erreurs LDPC
+                const correctedBinary = ldpc.decode(syncedBinary, quality);
+                renderStep("Correction d'Erreurs LDPC", "Le code LDPC utilise les bits de parité pour tenter de corriger les erreurs restantes.", correctedBinary);
+
+                // 8. Restitution du message et Résultats
+                const decodedText = binaryToText(correctedBinary);
+                const success = originalText === decodedText;
+
+                const finalHtml = `
+                    <div class="result-card bg-gray-900/50 p-6 rounded-lg mt-4">
+                        <h3 class="text-xl font-bold text-white text-center">Résultat Final</h3>
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+                            <div>
+                                <h4 class="font-semibold text-gray-400">Message Original:</h4>
+                                <p class="code-block text-base mt-1">${originalText}</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-400">Message Décodé:</h4>
+                                <p class="code-block text-base mt-1 ${success ? 'text-green-400' : 'text-red-400'}">${decodedText || "Échec"}</p>
+                            </div>
+                        </div>
+                        <div class="text-center pt-4 mt-4">
+                            <p class="text-lg font-bold ${success ? 'text-green-400' : 'text-red-400'}">
+                            ${success ? '✅ Succès de la transmission !' : '❌ Erreurs détectées dans le message final !'}
+                            </p>
                         </div>
                     </div>
-                 </div>
-            `;
-        }
-
-        simulateBtn.addEventListener('click', () => {
-            simulationResults.innerHTML = '';
-            simulateBtn.disabled = true;
-            btnText.classList.add('hidden');
-            btnSpinner.classList.remove('hidden');
-            
-            setTimeout(() => {
-                const originalText = inputText.value;
-                const ldpcRatio = parseFloat(ldpcRatioSlider.value);
-                const readCount = parseInt(readCountSlider.value);
-                const errorRate = parseInt(errorRateSlider.value) / 100;
-
-                const originalBinary = textToBinary(originalText);
-                const codewordBinary = ldpcEncode(originalBinary, ldpcRatio);
-                simulationResults.innerHTML += createStepCard(
-                    "Étape 1 : Encodage LDPC",
-                    `La chaîne binaire est encodée. Des bits de redondance sont ajoutés pour la correction d'erreurs. Avec un ratio de ${ldpcRatio}, ${ldpcRatio*100}% de la séquence contient l'information utile.`,
-                    codewordBinary, 1);
-
-                const originalDna = binaryToDna(codewordBinary);
-                simulationResults.innerHTML += createStepCard(
-                    "Étape 2 : Conversion en Séquence ADN",
-                    "Le mot de code binaire est converti en une séquence de bases ADN (A, C, G, T).",
-                    originalDna, 2);
-                
-                const noisyReads = noisyChannel(originalDna, readCount, errorRate);
-                const readsDisplay = noisyReads.slice(0, 5).join('<br>');
-                simulationResults.innerHTML += createStepCard(
-                    "Étape 3 : Canal Bruité (Simulation)",
-                    `La séquence passe par un canal avec un taux d'erreur de ${errorRate*100}%. ${readCount} lectures imparfaites sont générées.`,
-                    readsDisplay + (readCount > 5 ? '<br>...' : ''), 3);
-
-                const consensusDna = consensusAlgorithm(noisyReads);
-                simulationResults.innerHTML += createStepCard(
-                    "Étape 4 : Algorithme de Consensus & Correction",
-                    `Les ${readCount} lectures sont alignées pour reconstruire la séquence probable, corrigeant la majorité des erreurs.`,
-                    consensusDna, 4);
-                
-                const finalBinary = dnaToBinary(consensusDna);
-                const finalMessageBinary = ldpcDecode(finalBinary, originalBinary.length);
-                const recoveredText = binaryToText(finalMessageBinary);
-
-                simulationResults.innerHTML += createResultCard(originalText, recoveredText);
-
-                simulateBtn.disabled = false;
-                btnText.classList.remove('hidden');
-                btnSpinner.classList.add('hidden');
-            }, 100);
+                `;
+                resultsContainer.innerHTML += finalHtml;
+            });
         });
     </script>
 </body>
