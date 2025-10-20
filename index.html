@@ -11,62 +11,106 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* slate-900 */
+            background-color: #0a0e1a; /* Fond bleu nuit */
+            color: #e0e0e0; /* Texte blanc cassé */
         }
         .orbitron {
             font-family: 'Orbitron', sans-serif;
         }
         .pipeline-card {
-            background-color: rgba(30, 41, 59, 0.5); /* slate-800 with opacity */
-            border: 1px solid rgba(51, 65, 85, 0.7); /* slate-700 with opacity */
-            backdrop-filter: blur(10px);
+            background-color: #1a2035; /* Fond de carte plus clair */
+            border: 1px solid #3a3f58;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .code-block {
+            background-color: #0d1117; /* Fond de code type GitHub */
+            border: 1px solid #30363d;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            color: #c9d1d9;
+            word-break: break-all;
+        }
+        .glow-button {
+            box-shadow: 0 0 5px #0ea5e9, 0 0 15px #0ea5e9, 0 0 25px #0ea5e9;
             transition: all 0.3s ease;
         }
-        .pipeline-card:hover {
-            border-color: rgba(56, 189, 248, 0.5); /* sky-400 with opacity */
-        }
-        .step-output {
-            background-color: #1e293b; /* slate-800 */
-            border: 1px solid #334155; /* slate-700 */
+        .glow-button:hover {
+             box-shadow: 0 0 10px #0ea5e9, 0 0 25px #0ea5e9, 0 0 50px #0ea5e9;
         }
         .neon-text {
-            color: #7dd3fc; /* sky-300 */
-            text-shadow: 0 0 5px rgba(14, 165, 233, 0.7), 
-                         0 0 10px rgba(14, 165, 233, 0.7), 
-                         0 0 20px rgba(14, 165, 233, 0.5);
+            color: #60a5fa; /* blue-400 */
+            text-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6;
         }
-        .btn-neon {
-            transition: all 0.3s ease;
-            box-shadow: 0 0 5px rgba(14, 165, 233, 0.6), 0 0 10px rgba(14, 165, 233, 0.4);
-        }
-        .btn-neon:hover {
-            box-shadow: 0 0 10px rgba(14, 165, 233, 1), 0 0 20px rgba(14, 165, 233, 0.8), 0 0 30px rgba(14, 165, 233, 0.6);
-            transform: translateY(-2px);
+        .result-card {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+            animation: fadeIn 0.5s forwards;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
-        .fade-in {
-            animation: fadeIn 0.8s ease-out forwards;
-        }
-        .fade-in-delay-1 { animation-delay: 0.2s; }
-        .fade-in-delay-2 { animation-delay: 0.4s; }
-        .fade-in-delay-3 { animation-delay: 0.6s; }
-        .fade-in-delay-4 { animation-delay: 0.8s; }
-        .fade-in-delay-5 { animation-delay: 1.0s; }
     </style>
 </head>
-<body class="bg-slate-900 text-gray-200">
-    <div class="container mx-auto px-4 py-12 md:py-20">
-        <header class="text-center mb-20">
+<body class="antialiased">
+    <div class="container mx-auto px-4 py-12">
+        <!-- En-tête -->
+        <header class="text-center mb-16">
             <h1 class="orbitron text-4xl md:text-6xl font-bold text-white mb-4">
                 DNA Storage Pipeline
-            </h1>
+                </h1>
             <p class="text-lg md:text-xl text-sky-300 max-w-3xl mx-auto">
-                Une simulation interactive du processus de stockage de données numériques sur de l'ADN synthétique, avec correction d'erreurs.
+                Transformer des mots en molécules. Découvrez notre pipeline complet pour archiver une phrase sur de l'ADN synthétique.
             </p>
         </header>
+
+        <!-- Simulateur Interactif -->
+        <section id="simulator" class="pipeline-card p-8 rounded-lg mb-20">
+            <h2 class="text-3xl font-bold text-white mb-6 text-center">Simulateur de Pipeline ADN</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div>
+                    <label for="inputText" class="block text-lg font-medium text-sky-300 mb-2">1. Entrez votre message</label>
+                    <textarea id="inputText" rows="4" class="w-full p-3 rounded-md bg-gray-800 border border-gray-600 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="Bonjour le monde !">Test de stockage ADN.</textarea>
+                </div>
+                <div class="space-y-6 pt-2">
+                     <div>
+                        <label for="ldpcRate" class="block text-lg font-medium text-sky-300 mb-2">2. Ratio d'Information LDPC <span id="ldpcRateValue" class="text-white font-mono bg-sky-900/50 rounded px-2 py-1 text-sm">0.7</span></label>
+                        <input id="ldpcRate" type="range" min="0.5" max="0.9" value="0.7" step="0.1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>Plus Robuste</span>
+                            <span>Plus Dense</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="readsCount" class="block text-lg font-medium text-sky-300 mb-2">3. Nombre de Lectures (Consensus) <span id="readsCountValue" class="text-white font-mono bg-sky-900/50 rounded px-2 py-1 text-sm">20</span></label>
+                        <input id="readsCount" type="range" min="5" max="50" value="20" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>5</span>
+                            <span>50</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="errorRate" class="block text-lg font-medium text-sky-300 mb-2">4. Taux d'Erreur du Canal <span id="errorRateValue" class="text-white font-mono bg-sky-900/50 rounded px-2 py-1 text-sm">5%</span></label>
+                        <input id="errorRate" type="range" min="1" max="100" value="95" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>Erreurs Max (~13%)</span>
+                            <span>Parfait (0%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="text-center mt-8">
+                <button id="runSimulation" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-4 px-8 rounded-full text-lg glow-button">
+                    Lancer la Simulation
+                </button>
+            </div>
+            <div id="simulation-results" class="mt-8 space-y-6"></div>
+        </section>
 
         <!-- Section d'information sur le stockage ADN -->
         <section class="mb-20">
@@ -124,111 +168,36 @@
             <h3 class="text-2xl font-semibold text-sky-300 mb-4 text-center mt-20">Avantages et Défis</h3>
             <div class="flex flex-col md:flex-row justify-center gap-8 max-w-5xl mx-auto">
                 <div class="pipeline-card p-6 rounded-lg text-left flex-1">
-                    <h4 class="text-xl font-semibold mb-3 neon-text">Avantages</h4>
-                    <ul class="space-y-2 text-gray-300 text-sm">
-                        <li class="flex items-start">
-                            <span class="text-sky-400 font-bold mr-2">&#10140;</span>
-                            <div><strong class="font-semibold text-white">Densité extrême :</strong> Un gramme d'ADN peut théoriquement stocker plus de 200 pétaoctets de données, l'équivalent de millions de films en haute définition.</div>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="text-sky-400 font-bold mr-2">&#10140;</span>
-                             <div><strong class="font-semibold text-white">Durabilité Millénaire :</strong> Conservé dans de bonnes conditions (froid, sec, à l'abri de la lumière), l'ADN peut préserver l'information pendant des milliers d'années sans dégradation.</div>
-                        </li>
-                    </ul>
+                    <h4 class="text-xl font-semibold mb-2 neon-text">Densité Extrême</h4>
+                    <p class="text-gray-300">Un gramme d'ADN peut théoriquement stocker plus de 200 exaoctets d'information, soit l'équivalent de millions de disques durs. C'est le support de stockage le plus dense connu.</p>
                 </div>
-                 <div class="pipeline-card p-6 rounded-lg text-left flex-1">
-                    <h4 class="text-xl font-semibold mb-3 neon-text">Défis Actuels</h4>
-                    <ul class="space-y-2 text-gray-300 text-sm">
-                        <li class="flex items-start">
-                            <span class="text-red-400 font-bold mr-2">&#10140;</span>
-                            <div><strong class="font-semibold text-white">Coût :</strong> La synthèse et le séquençage de l'ADN sont encore des processus très coûteux, bien que les prix diminuent rapidement.</div>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="text-red-400 font-bold mr-2">&#10140;</span>
-                            <div><strong class="font-semibold text-white">Vitesse :</strong> L'écriture et la lecture des données sur ADN sont beaucoup plus lentes que les technologies de stockage traditionnelles. Ce n'est pas une technologie d'accès rapide.</div>
-                        </li>
-                         <li class="flex items-start">
-                            <span class="text-red-400 font-bold mr-2">&#10140;</span>
-                            <div><strong class="font-semibold text-white">Taux d'erreur :</strong> Les processus chimiques peuvent introduire des erreurs (mutations). Des algorithmes de correction robustes, comme celui simulé ici, sont donc essentiels.</div>
-                        </li>
-                    </ul>
+                <div class="pipeline-card p-6 rounded-lg text-left flex-1">
+                    <h4 class="text-xl font-semibold mb-2 neon-text">Durabilité Millénaire</h4>
+                    <p class="text-gray-300">Contrairement aux supports magnétiques qui se dégradent en quelques décennies, l'ADN peut préserver l'information pendant des milliers d'années s'il est conservé à l'abri de la lumière et de l'humidité.</p>
+                </div>
+                <div class="pipeline-card p-6 rounded-lg text-left flex-1">
+                    <h4 class="text-xl font-semibold mb-2 neon-text">Défis Actuels</h4>
+                    <p class="text-gray-300">Les principaux obstacles restent le coût élevé et la lenteur des processus de synthèse (écriture) et de séquençage (lecture), bien que la recherche progresse rapidement pour surmonter ces défis.</p>
                 </div>
             </div>
-            <!-- Bouton GitHub -->
+             <!-- Bouton GitHub -->
             <div class="text-center mt-12">
                 <a href="https://github.com/TeodoreAutuly/DNA-Storage-Pipeline" target="_blank" rel="noopener noreferrer"
-                   class="inline-flex items-center gap-x-2 bg-sky-600 text-white font-semibold px-6 py-3 rounded-lg btn-neon">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                   class="inline-flex items-center gap-x-3 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-6 rounded-lg glow-button">
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                       <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
                     </svg>
-                    Voir le Projet sur GitHub
+                    <span>Voir le Projet sur GitHub</span>
                 </a>
             </div>
-
         </section>
 
-
-        <!-- Simulateur -->
-        <main class="pipeline-card p-6 sm:p-8 rounded-lg">
-            <h2 class="text-3xl font-bold text-white mb-8 text-center">Simulateur de Pipeline</h2>
-            
-            <!-- Controles -->
-            <div class="mb-10 space-y-6 max-w-5xl mx-auto">
-                <div>
-                    <label for="inputText" class="block text-sm font-medium text-sky-300 mb-2">1. Entrez une phrase à stocker :</label>
-                    <input type="text" id="inputText" class="w-full bg-slate-800 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" value="Bonjour le monde !">
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label for="ldpcRatio" class="block text-sm font-medium text-sky-300 mb-2">2. Ratio d'information LDPC : <span id="ldpcRatioValue" class="font-mono text-sky-400">0.7</span></label>
-                        <input type="range" id="ldpcRatio" min="0.5" max="0.9" step="0.1" value="0.7" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-                        <div class="text-xs text-gray-400 flex justify-between mt-1">
-                            <span>Robuste</span>
-                            <span>Dense</span>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="readCount" class="block text-sm font-medium text-sky-300 mb-2">3. Nombre de lectures ADN : <span id="readCountValue" class="font-mono text-sky-400">20</span></label>
-                        <input type="range" id="readCount" min="5" max="50" step="5" value="20" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-                         <div class="text-xs text-gray-400 flex justify-between mt-1">
-                            <span>Moins</span>
-                            <span>Plus</span>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="errorRate" class="block text-sm font-medium text-sky-300 mb-2">4. Taux d'erreur du canal : <span id="errorRateValue" class="font-mono text-sky-400">5%</span></label>
-                        <input type="range" id="errorRate" min="1" max="10" step="1" value="5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-                        <div class="text-xs text-gray-400 flex justify-between mt-1">
-                            <span>Faible</span>
-                            <span>Élevé</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="text-center pt-4">
-                    <button id="simulateBtn" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-8 rounded-lg transition duration-300 transform hover:scale-105 w-60 h-12 flex items-center justify-center">
-                        <span id="btnText">Lancer la Simulation</span>
-                        <svg id="btnSpinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Résultats de la simulation -->
-            <div id="simulationResults" class="mt-12 space-y-8">
-                <!-- Cette section sera remplie par le JavaScript -->
-            </div>
-        </main>
-        
-        <footer class="text-center mt-20 text-gray-500 text-sm">
-            <p>Réalisé par Téodore Autuly pour un projet supervisé par Elsa Dupraz.</p>
-             <p class="mt-4">MIT License</p>
-        </footer>
-
     </div>
+
+    <footer class="text-center py-8 text-gray-400 text-sm border-t border-gray-700">
+        <p>Réalisé par Téodore Autuly pour un projet supervisé par Elsa Dupraz.</p>
+        <p class="mt-2">Licence MIT</p>
+    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -474,3 +443,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+
