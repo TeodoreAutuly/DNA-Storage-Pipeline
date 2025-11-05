@@ -1,6 +1,5 @@
-# DNA Storage Pipeline
+# DNA Storage Pipeline [![Visit Interactive Simulator](https://img.shields.io/badge/🧬%20Visit%20Interactive%20Simulator-Live%20Demo-0ea5e9?style=for-the-badge&logo=github&logoColor=white)](https://teodoreautuly.github.io/DNA-Storage-Pipeline/)
 
-[![Visit Interactive Simulator](https://img.shields.io/badge/🧬%20Visit%20Interactive%20Simulator-Live%20Demo-0ea5e9?style=for-the-badge&logo=github&logoColor=white)](https://teodoreautuly.github.io/DNA-Storage-Pipeline/)
 Un pipeline complet de simulation pour le stockage de données sur ADN synthétique, incluant encodage, simulation de canal bruité, décodage par consensus et correction d'erreurs LDPC.
 
 ---
@@ -472,4 +471,5 @@ Projet supervisé par **Elsa Dupraz**
 ---
 
 **DNA Storage Pipeline** - Transformer des mots en molécules, préserver l'information pour l'éternité.
+
 
